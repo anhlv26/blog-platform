@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  username  String   @unique
+  email     String   @unique
+  password  String
+
+  avatar    String?
+  bio       String?
+
+  role      Role     @default(USER)
+
+  posts         Post[]
+  comments      Comment[]
+  refreshTokens RefreshToken[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Post {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  title     String
+  slug      String   @unique
+
+  excerpt   String?
+  content   String   @db.String
+
+  thumbnail String?
+
+  status    PostStatus @default(DRAFT)
+
+  viewCount Int @default(0)
+
+  authorId  String @db.ObjectId
+  author    User   @relation(fields: [authorId], references: [id])
+
+  comments  Comment[]
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+}
+
+model Comment {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  content   String
+
+  postId    String @db.ObjectId
+  userId    String @db.ObjectId
+
+  post      Post @relation(fields: [postId], references: [id])
+  user      User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model RefreshToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+
+  token     String   @unique
+
+  userId    String @db.ObjectId
+  user      User   @relation(fields: [userId], references: [id])
+
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+}
